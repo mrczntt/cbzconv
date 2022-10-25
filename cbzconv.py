@@ -16,8 +16,24 @@ parser = argparse.ArgumentParser(description='Converts Comic Book Archives to PD
 parser.add_argument('input_files', type=str, nargs='+', help='files to be converted')
 parser.add_argument('--output-dir', metavar='path', dest="output_dir", default=".", type=str, help='output directory')
 parser.add_argument('--no-landscape', dest='no_landscape', action='store_true', help='flip all landscape-oriented pages')
+parser.add_argument('--paper-size', metavar='size', dest="paper_size", default="SameAsPage", type=str, help='set a fixed paper size')
 
 args = parser.parse_args()
+page_size = (0, 0)
+
+match args.paper_size:
+	case 'A4':
+		page_size = (2480, 3508)
+	case 'A5':
+		page_size = (1748, 2480)
+	case 'B6':
+		page_size = (1476, 2079)
+	case 'SameAsPage':
+		pass
+	case other:
+		print("Unsupported paper size. Supported values are: A4, A5, B6, SameAsPage (default)")
+		exit()
+
 
 if not os.path.isdir(args.output_dir):
 	print("Output directory doesn't exist")
@@ -52,6 +68,13 @@ for input_file in args.input_files:
 		width, height = page.size
 		if width > height and args.no_landscape:
 			page = page.rotate(90, expand = 1)
+		if page_size != (0, 0):
+			base = Image.new('RGB', page_size, (255, 255, 255))
+			page.thumbnail(page_size)
+			pos = tuple(map(lambda i, j: int((i - j) / 2), base.size, page.size))
+			base.paste(page, pos)
+			pages.append(base)
+			continue
 		pages.append(page)
     	
 	first_page = pages.pop(0)
